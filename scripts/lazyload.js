@@ -1,53 +1,6 @@
-'use strict';
-const fs = require('hexo-fs');
-const UglifyJS = require('uglify-js');
-const lazyLoadPath = './simple-lazyload.js';
-const thirdPartyFixPath = './third-party-fix.js';
-
-hexo.extend.filter.register('after_render:html', function lazyProcess(htmlContent) {
-    let defaultImagePath = './default-image.json';
-    let loadingImage = this.config.lazyload.loadingImg;
-
-    if (!loadingImage) {
-        loadingImage = JSON.parse(fs.readFileSync(defaultImagePath)).default;
-    }
-
-    return htmlContent.replace(/<img(.*?)src="(.*?)"(.*?)>/gi, function (str, p1, p2) {
-        // might be duplicate
-        if(/data-original/gi.test(str)){
-            return str;
-        }
-        if(/src="data:image(.*?)/gi.test(str)) {
-            return str;
-        }
-        if(/no-lazy/gi.test(str)) {
-            return str;
-        }
-        return str.replace(p2, loadingImage + '" data-original="' + p2);
-    });
-});
-hexo.extend.filter.register('after_render:html', function(htmlContent){
-    let injectSetting = function () {
-        return `<script>
+"use strict";const fs=require("hexo-fs"),UglifyJS=require("uglify-js"),lazyLoadPath="./simple-lazyload.js",thirdPartyFixPath="./third-party-fix.js";hexo.extend.filter.register("after_render:html",function(n){let s="./default-image.json",r=this.config.lazyload.loadingImg;return r||(r=JSON.parse(fs.readFileSync(s)).default),n.replace(/<img(.*?)src="(.*?)"(.*?)>/gi,function(e,a,t){return/data-original/gi.test(e)||/src="data:image(.*?)/gi.test(e)||/no-lazy/gi.test(e)?e:e.replace(t,r+'" data-original="'+t)})}),hexo.extend.filter.register("after_render:html",function(i){let n=function(){return`<script>
             window.imageLazyLoadSetting = {
                 isSPA: ${!!this.config.lazyload.isSPA},
                 processImages: null,
             };
-        </script>`;
-    };
-    let injectExtraScript = function (filePath) {
-        if (!fs.exists(filePath)) throw new TypeError(filePath + ' not found!');
-        let sourceCode = fs.readFileSync(filePath, { escape: true });
-        return '<script>' + UglifyJS.minify(sourceCode).code + '</script>';
-    };
-    let appendScript = function(content, htmlContent) {
-        let lastIndex = htmlContent.lastIndexOf('</body>');
-        return htmlContent.substring(0, lastIndex) + content + htmlContent.substring(lastIndex, htmlContent.length);
-    };
-    if (/<\/body>/gi.test(htmlContent)) {
-        htmlContent = appendScript(injectSetting.bind(this)(), htmlContent);
-        htmlContent = appendScript(injectExtraScript(thirdPartyFixPath), htmlContent);
-        htmlContent = appendScript(injectExtraScript(lazyLoadPath), htmlContent);
-    }
-    return htmlContent;
-});
+        <\/script>`},s=function(e){if(!fs.exists(e))throw new TypeError(e+" not found!");let a=fs.readFileSync(e,{escape:!0});return"<script>"+UglifyJS.minify(a).code+"<\/script>"},r=function(e,a){let t=a.lastIndexOf("</body>");return a.substring(0,t)+e+a.substring(t,a.length)};return/<\/body>/gi.test(i)&&(i=r(n.bind(this)(),i),i=r(s(thirdPartyFixPath),i),i=r(s(lazyLoadPath),i)),i});
